@@ -34,6 +34,8 @@
 #include <WiFi.h>
 #include <EthernetUdp.h>
 #include <Dns.h>
+#include <WiFi.h>
+#include <WiFiUdp.h>
 
 #include <SFM3X00.h>
 #include <Adafruit_Sensor.h>
@@ -120,6 +122,16 @@ signed long display_min_pressure = 0;
 byte mac[6];
 char macs[18];
 
+// THESE ARE THE PARAMETERS MOST LIKELY TO CHANGE!!!
+
+// WiFi network name and password:
+const char * networkName = "readfamilynetwork";
+const char * networkPswd = "magicalsparrow96";
+
+WiFiUDP udp;
+
+EthernetUDP udpclient;
+
 #define PARAMHOST "ventmon.coslabs.com"
 // #define PARAMPORT 5858 // 6111
 // #define LOCALPORT 5858 // 6111
@@ -130,7 +142,7 @@ char *Loghost = strdup(PARAMHOST);
 uint16_t Logport = PARAMPORT;
 IPAddress LoghostAddr;
 
-EthernetUDP udpclient;
+
 
 //#define CIRCBUFF
 #ifdef CIRCBUFF
