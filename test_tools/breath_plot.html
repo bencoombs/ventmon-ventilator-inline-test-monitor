@@ -1416,18 +1416,16 @@ function compute_current_TRIP(TRIP_min,TRIP_max, samples)
       // I'll use qadrilateral approximation.
       // We'll form each quadrilateral between two samples.
       var ms = flows[j+1].ms - flows[j].ms;
-      var ht = ((flows[j+1].val*pressures[j+1].val + flows[j].val*pressures[j+1].val )/2) * CONVERT_PIRDS_TO_SLM;
+      var ht = ((Math.abs(flows[j+1].val*pressures[j+1].val) + Math.abs(flows[j].val*pressures[j+1].val ))/2) * CONVERT_PIRDS_TO_SLM;
       // Flow in standard liters per minute,
       // divide by 60000 to get liters/s
-      // Pressures in cm H2O,
-      // multiply by 0.000967841 to get atm (L.atm = Joules)
-      // moving constants to end...
-      pressureVolume_prod += ms * ht;
+      pressureVolume_prod += ms * ht/60000;
       if (isNaN(pressureVolume_prod)) {
         debugger;
       }
     }
-    return pressureVolume_prod/(60*1000)*0.000967841
+    // pressure cm H2O --> atm (divide by 1033)
+    return pressureVolume_prod/1033
   }
 
 
