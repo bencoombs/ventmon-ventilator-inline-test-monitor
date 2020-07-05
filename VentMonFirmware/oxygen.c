@@ -16,13 +16,24 @@ bool oxygen_sensing = true;
 unsigned long last_fiO2_sample = 0;
 float fiO2_sample = 0;
 
-void  oxygen_sensor_init(){
-	
+void init(){
+	// setup ADC for oxygen sensing
+  ads.setGain(GAIN_SIXTEEN);
+  ads.begin();
+  initialO2 = avgADC(O2CHANNEL);
+
+  Serial.println(-(UNPLUGGED_MAX));
+
+  if (initialO2 <= UNPLUGGED_MAX && initialO2 >= -(UNPLUGGED_MAX))
+  {
+    Serial.println("WARNING: No oxygen sensor detected.");
+    oxygenSensing = false;
+  }
 }
 
 
 // Read Oxygen Sensor - FiO2
-void oxygen_sensor_read(uint32_t sample_ms) {
+void read_oxygen_sensor(uint32_t sample_ms) {
   unsigned long fiO2_timer = millis();
 
   // Sample every few seconds
