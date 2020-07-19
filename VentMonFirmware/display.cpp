@@ -71,14 +71,16 @@ void display_init() {
 void display_print_pirds(char e, char t, char loc, unsigned short int n, unsigned long ms, signed long val) {
   // TODO: add OLED output
   switch (t) {
-    case 'P':
+    //case 'P': //pressure
+      //display_pressure_val = val;
+      //break;
+    case 'D': //pressure
       display_pressure_val = val;
       break;
-    case 'F':
+    case 'O': //oxygen
       display_fiO2_val = val;
       break;
   }
-	
 }
 
 
@@ -112,8 +114,9 @@ void display_min_max_pressure(bool max_not_min, long display_pressure) {
 }
 
 void display_pressure(long display_airway_pressure) {
+  // 1 Pa =  0.010197442889221 cmH20
   display.print("Pressure: ");
-  display.print(display_airway_pressure);
+  display.print(display_airway_pressure * 0.01);
   display.println(" cmH20");
 }
 
@@ -122,10 +125,16 @@ void display_debug(signed long display_debug_value) {
   display.println(display_debug_value);
 }
 
-void display_oxygen(float fiO2) {
-  display.print("FiO2: ");
-  display.print(fiO2);
-  display.println(" %");
+void display_oxygen(signed long fiO2) {
+//  display.print("FiO2: ");
+  if (fiO2 > 0 && fiO2 <= 100){
+    char buffer[18];
+    sprintf (buffer, "FiO2: %2d", fiO2);
+    display.print(buffer);
+    display.println(" %");
+  } else {
+    display.print("error");
+  }
 }
 
 void display_ethernet_starting(){
@@ -151,7 +160,7 @@ void update_display() {
   //display.setCursor(0, 10);
   //display_min_max_pressure(false);
   
-  display.setCursor(0, 20);
+  display.setCursor(0, 10);
   display_oxygen(display_fiO2_val);
 
   display.display();

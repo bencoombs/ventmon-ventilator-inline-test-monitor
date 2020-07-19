@@ -203,9 +203,11 @@ void read_pressure_sensors(uint32_t sample_ms) {
 
   // Read airway pressure
   if (pressure_internal != SENSOR_SENTINEL) {
-    output_measurement('M', 'P', 'A', 0, sample_ms, pressure_internal); // eg. 10444
+    output_measurement('M', 'P', 'A', 0, sample_ms, pressure_internal); // eg. 10444 Pascals (Pa) 1cmH20 =  98.0665 Pa
 
     // really this should be a running max, for now it is instantaneous TODO: improve!
+
+    // Relative pressure
     pressure_max_display = pressure_internal - smooth_ambient;
     output_measurement('M', 'D', 'A', 0, sample_ms, pressure_internal - smooth_ambient);
   } else {

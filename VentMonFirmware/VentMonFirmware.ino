@@ -63,7 +63,10 @@ void loop() {
 void check_tick(){
   unsigned long m = millis();
   if (m > sample_tick_millis) {
-    sample_tick_millis = m;
+    Serial.print("Tick ms: ");
+    Serial.println(m-sample_tick_millis);
+    
+    sample_tick_millis = m;    
   } else {
     // Something went wrong - warn the user.
     Serial.println(F("ERROR! loop(): unticked clock cycle.")); // Todo: improve error handling
