@@ -1,3 +1,6 @@
+    #include <SFM3X00.h>
+#include <PIRDS.h>
+#include "data_tx.h"
 #define PIRDS_SENSIRION_SFM3200 0
 #define PIRDS_SENSIRION_SFM3400 1
 
@@ -11,7 +14,7 @@ int sensirion_sensor_type = PIRDS_SENSIRION_SFM3200;
 // because of the physical mounting!!!
 bool SENSOR_INSTALLED_BACKWARD = true;
 
-void init(){
+void flow_init(){
   flow_sensor.begin();	
 }
 

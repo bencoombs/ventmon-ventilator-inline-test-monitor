@@ -10,68 +10,64 @@
 
 #include <Wire.h>
 #include <SPI.h>
-
-#include <Ethernet.h>
-#include <WiFi.h>
-#include <WiFiUdp.h>
-#include <EthernetUdp.h>
-#include <Dns.h>
-
 #include <PIRDS.h>
-#include <SFM3X00.h>
-#include <Adafruit_Sensor.h>
-#include <Adafruit_BME680.h>
-#include <Adafruit_ADS1015.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
 
-#include <display.h>
-#include <pressure.h>
-#include <networking.h>
-#include <data_tx.h>
-#include <debug_serial.h>
-#include <flow.h>
-#include <oxygen.h>
-#include <utils.h>
+// VentMon Includes
+#include "config.h"
+#include "display.h"
+#include "networking.h"
+#include "data_tx.h"
+#include "pressure.h"
+#include "flow.h"
+#include "oxygen.h"
+#include "debug_serial.h"
 
+unsigned long sample_tick_millis;
 
+// Program entry point
 void setup() {
+  
   Serial.begin(115200);
-  Wire.begin();
   while (!Serial); // Wait for serial connection to be ready
 
+  Wire.begin();
+  
   // DISPLAY
-  display.display_init();
+  display_init();
   
   // SENSORS
-  flow.init();
-
-  pressure.init();
-
-  oxygen.init();
+  flow_init();
+  pressure_init();
+  oxygen_sensor_init();
   
   // NETWORKING
-  networking.init();
+  networking_init();
 }
 
+// VentMon uses a simple loop to read sensors and
+// output the data in a JSON PIRDS format.
 void loop() {
-  // Check the clock has ticked correctly.
+  check_tick();
+
+  unsigned long sample_ms = millis();
+
+  read_pressure_sensors(sample_ms);
+  read_oxygen_sensor(sample_ms);
+  read_flow_sensor(sample_ms);
+  
+  Serial.flush();
+  update_display();
+}
+
+// Check the loop has advanced correctly.
+void check_tick(){
   unsigned long m = millis();
   if (m > sample_tick_millis) {
     sample_tick_millis = m;
   } else {
     // Something went wrong - warn the user.
     Serial.println(F("ERROR! loop(): unticked clock cycle.")); // Todo: improve error handling
+	
     return;
   }
-
-  // Time since boot in milliseconds - used in the calculations below.
-  unsigned long sample_ms = millis();
-
-  pressure.read_pressure_sensors(sample_ms);
-  oxygen.read_oxygen_sensor(sample_ms);
-  flow.read_flow_sensor(sample_ms);
-  debug_serial.debug_clear();
-
-  display.update_display();
 }

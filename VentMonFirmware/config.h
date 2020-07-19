@@ -1,7 +1,9 @@
-#pragma once
-
+#ifndef CONFIG_H
+#define CONFIG_H
 //
 //
 //
 
-#define XYZ 0
+#define XYZ
+
+#endif

@@ -3,10 +3,10 @@
 // Source code: https://github.com/adafruit/Adafruit_BME680
 // API docs: https://adafruit.github.io/Adafruit_BME680/html/class_adafruit___b_m_e680.html
 
-
+#include <PIRDS.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BME680.h>
-#include <data_tx.h>
+#include "data_tx.h"
 
 #define DEBUG_LOG true
 #define SEALEVELPRESSURE_HPA (1013.25)
@@ -41,7 +41,7 @@ signed long display_debug_value = 0;
 // Only need to sample the ambient air occasionally
 // (say once a minute) for PEEP analysis
 int ambient_counter = 0;
-unsigned long sample_tick_millis = 0;
+//sunsigned long sample_tick_millis = 0;
 
 // We could send out only raw data, and let more powerful computers process things.
 // But we have a powerful micro controller here, so we will try to be useful!
@@ -58,23 +58,8 @@ signed long ambient_window[AMB_WINDOW_SIZE];
 
 // Check if BME pressure sensors were found
 // Otherwise try find them!
-void status() {
-  if (!sensor_connected[AIRWAY_PRESSURE_SENSOR]) {
-    init(AIRWAY_PRESSURE_SENSOR);
-  }
 
-  if (!sensor_connected[AMBIENT_PRESSURE_SENSOR]) {
-    init(AMBIENT_PRESSURE_SENSOR);
-  }
-}
 
-void init(){
-  init_sensor(AIRWAY_PRESSURE_SENSOR);
-  init_sensor(AMBIENT_PRESSURE_SENSOR);
-	
-  signed long v = read_pressure_only(AMBIENT_PRESSURE_SENSOR);
-  init_ambient(v);
-}
 
 // Initialize pressure sensor
 void init_sensor(int i) {
@@ -85,8 +70,8 @@ void init_sensor(int i) {
 
   if (!sensor_connected[i]) {
 	#ifdef DEBUG_LOG
-      debug_print(F("WARNING! BME680 sensor could not be found!\nCheck connection for: "));
-      debug_print(loc_addr, HEX);
+//      debug_print(F("WARNING! BME680 sensor could not be found!\nCheck connection for: "));
+  //    debug_print(loc_addr, HEX);
 	#endif
   } else {
     // Set up oversampling and filter initialization
@@ -116,6 +101,18 @@ void init_ambient(signed long v) {
 }
 
 
+
+void sensor_check_status() {
+  if (!sensor_connected[AIRWAY_PRESSURE_SENSOR]) {
+    init_sensor(AIRWAY_PRESSURE_SENSOR);
+  }
+
+  if (!sensor_connected[AMBIENT_PRESSURE_SENSOR]) {
+    init_sensor(AMBIENT_PRESSURE_SENSOR);
+  }
+}
+
+
 // the parameter i here numbers our pressure sensors.
 // The sensors may be better, for as per the PIRDS we are returning integer 10ths of a mm of H2O
 signed long read_pressure_only(int i)
@@ -123,8 +120,8 @@ signed long read_pressure_only(int i)
   if (i < 2) {
     if (! sensor[i].performReading()) {
 	  #ifdef DEBUG_LOG
-        debug_print(F("WARNING! Failed to read BME sensor:"));
-        debug_print(sensor_addr[i], HEX);
+//        debug_print(F("WARNING! Failed to read BME sensor:"));
+  //      debug_print(sensor_addr[i], HEX);
 	  #endif
       sensor_connected[i] = false;
       return -999.0;
@@ -137,6 +134,27 @@ signed long read_pressure_only(int i)
   } else {
     // internal error! Ideally would publish an internal error event
   }
+}
+
+void sensor_report_full(int i)
+{
+  unsigned long ms = millis();
+
+  if (! sensor[i].performReading()) {
+  #ifdef DEBUG_LOG
+      Serial.print(F("ERROR! Failed to read BME sensor: "));
+      Serial.println(sensor_addr[i], HEX);
+  #endif
+    sensor_connected[i] = false;
+    return;
+  }
+
+  char loc = (i == 0) ? 'A' : 'B';
+  output_measurement('M', 'T', loc, 0, ms, (signed long) (0.5 + (sensor[i].temperature * 100)));
+  output_measurement('M', 'P', loc, 0, ms, (signed long) (0.5 + (sensor[i].pressure / (98.0665 / 10))));
+  output_measurement('M', 'H', loc, 0, ms, (signed long) (0.5 + (sensor[i].humidity * 100)));
+  output_measurement('M', 'G', loc, 0, ms, (signed long) (0.5 + sensor[i].gas_resistance));
+  output_measurement('M', 'A', loc, 0, ms, (signed long) (0.5 + sensor[i].readAltitude(SEALEVELPRESSURE_HPA)));
 }
 
 void read_pressure_sensors(uint32_t sample_ms) {
@@ -196,24 +214,10 @@ void read_pressure_sensors(uint32_t sample_ms) {
   }
 }
 
-
-void sensor_report_full(int i)
-{
-  unsigned long ms = millis();
-
-  if (! sensor[i].performReading()) {
-	#ifdef DEBUG_LOG
-      Serial.print(F("ERROR! Failed to read BME sensor: "));
-      Serial.println(sensor_addr[i], HEX);
-	#endif
-    sensor_connected[i] = false;
-    return;
-  }
-
-  char loc = (i == 0) ? 'A' : 'B';
-  output_measurement('M', 'T', loc, 0, ms, (signed long) (0.5 + (sensor[i].temperature * 100)));
-  output_measurement('M', 'P', loc, 0, ms, (signed long) (0.5 + (sensor[i].pressure / (98.0665 / 10))));
-  output_measurement('M', 'H', loc, 0, ms, (signed long) (0.5 + (sensor[i].humidity * 100)));
-  output_measurement('M', 'G', loc, 0, ms, (signed long) (0.5 + sensor[i].gas_resistance));
-  output_measurement('M', 'A', loc, 0, ms, (signed long) (0.5 + sensor[i].readAltitude(SEALEVELPRESSURE_HPA)));
+void pressure_init(){
+  init_sensor(AIRWAY_PRESSURE_SENSOR);
+  init_sensor(AMBIENT_PRESSURE_SENSOR);
+  
+  signed long v = read_pressure_only(AMBIENT_PRESSURE_SENSOR);
+  init_ambient(v);
 }

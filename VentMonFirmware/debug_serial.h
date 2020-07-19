@@ -1,7 +1,10 @@
-#pramga once
+#ifndef DEBUG_SERIAL_H
+#define DEBUG_SERIAL_H 
+/*
+#define print(...) Serial.print(__VA_ARGS__);
+#define println(...) Serial.println(__VA_ARGS__);
+#define flush() Serial.flush();
+*/
+void error(int level, char* message);
 
-#define debug_print(...) Serial.print(__VA_ARGS__);
-#define debug_println(...) Serial.println(__VA_ARGS__);
-#define debug_clear() Serial.flush();
-
-void debug_console();
+#endif

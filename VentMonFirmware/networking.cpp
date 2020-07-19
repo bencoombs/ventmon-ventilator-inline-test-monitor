@@ -2,9 +2,10 @@
 #include <PIRDS.h>
 #include <Ethernet.h>
 #include <WiFi.h>
-#include <WiFiUdp.h>
+//#include <WiFiUdp.h>
 #include <EthernetUdp.h>
 #include <Dns.h>
+#include "display.h"
 
 // Set true to use wifi, false to use ethernet.
 //bool using_wifi = false;
@@ -29,12 +30,7 @@ bool ethernet_connected = false;
 // WIFI
 const char* ssid = "networkSSID";
 const char* password = "networkPASS";
-WiFiUDP wifi_udp;
-
-void init(){
-  //wifi_init()
-  ethernet_init();	
-}
+//WiFiUDP wifi_udp;
 
 void get_mac_addr() {
   WiFi.macAddress(mac); // Get MAC address of wifi chip
@@ -51,12 +47,12 @@ void get_mac_addr() {
 void udp_init(bool using_wifi){
   Serial.println("Starting UDP...");
   
-  if (using_wifi){
-    wifi_udp.begin(LOCAL_PORT);
+//  if (using_wifi){
+//    wifi_udp.begin(LOCAL_PORT);
 
     // Currently not transmitting to the Data Lake via Wifi.
-  }
-  else {
+//  }
+//  else {
     udp_client.begin(LOCAL_PORT);
 
     DNSClient dns_client;
@@ -72,78 +68,65 @@ void udp_init(bool using_wifi){
     else {
       Serial.print("DNS host failed to resolve.");
     }
-  }
+  //}
 }
 
 void ethernet_init() {
-
   Ethernet.init(33);  // ESP32 with Adafruit Featherwing Ethernet
 
   get_mac_addr();
-
-  display.setCursor(0, 0);
-  display.println(F("Ethernet starting..."));
-  display.display();
-
-  delay(4000);
-
+  display_ethernet_starting();
   ethernet_connected = false;
-  int retries = 10;
 
-  while (retries > 0) {
-    Serial.println(F("Connecting to to Ethernet..."));
-    Serial.println(Ethernet.hardwareStatus());
+  delay(2000);
 
-    // Check the Ethernet hardware is connected.
-    if (Ethernet.hardwareStatus() == EthernetNoHardware) {
+  Serial.print(F("Connecting to to Ethernet, hardware status: "));
+  Serial.println(Ethernet.hardwareStatus());
+  
+  // Check the Ethernet hardware is connected.
+  if (Ethernet.hardwareStatus() == EthernetNoHardware) {
       Serial.println(F("WARNING! Ethernet shield was not found!")); // Why is this triggering?
-      //break;
-    }
-    // Check the Ethernet cable is connected
-    if (Ethernet.linkStatus() == LinkOFF) {
-      Serial.println(F("WARNING! Ethernet cable is not connected!"));
-      //break;
-    }
+  }
 
+  // Check the Ethernet cable is connected
+  if (Ethernet.linkStatus() == LinkOFF) {
+    Serial.println(F("WARNING! Ethernet cable is not connected!"));
+  }
+  else
+  {
     // Start the Ethernet connection
-    Serial.println(F("Initializing Ethernet with DHCP."));
-
     if (Ethernet.begin(mac) == 0) {
       // Ethernet failed to connect.
-      Serial.print(F("WARNING! Ethernet failed to connect. Retrying..."));
-      Serial.println(retries);
-      retries--;
-      delay(1000);
-
+      Serial.print(F("WARNING! Ethernet failed to connect!"));
     } else {
       // Ethernet connected successfully.
       ethernet_connected = true;
       Serial.print(F("Ethernet connected!\nLocal IP: "));
       Serial.println(Ethernet.localIP());
-      break;
     }
   }
-
   // OLED Display
-  display.setCursor(0, 10);
-  display.print(F("Ethernet "));
-  display.println(ethernet_connected ? "connected" : "offline");
-  display.display();
-  delay(3000);
+  display_ethernet_connected(ethernet_connected);
 
+  // Give time for user to view display and also let ethernet
+  // initialize (if any is connected)
+  delay(2000);
+  
   if (!ethernet_connected)
     return;
 
-  // Give the Ethernet shield a second to initialize.
-  delay(1000);
+  udp_init(false);
+}
 
-  udp_init();
+void networking_init(){
+  //wifi_init()
+  ethernet_init();  
 }
 
 // WIFI
 // https://techtutorialsx.com/2017/06/29/esp32-arduino-getting-started-with-wifi/
-
-String translateEncryptionType(wifi_auth_mode_t encryptionType) {
+/*
+char* translateEncryptionType(wifi_auth_mode_t encryptionType) {
 
   switch (encryptionType) {
     case (WIFI_AUTH_OPEN):
@@ -209,9 +192,13 @@ void wifi_init() {
 
   udp_init();
 }
-
+*/
 bool send_data_message(Message ma) {
 
+  if (!ethernet_connected){
+    return false;
+  }
+  
   unsigned char m[264];
 
   fill_byte_buffer_message(&ma, m, 264);
@@ -231,6 +218,10 @@ bool send_data_message(Message ma) {
 }
 
 bool send_data_measurement(Measurement ma) {
+  if (!ethernet_connected){
+    return false;
+  }
+  
   unsigned char m[14];
 
   fill_byte_buffer_measurement(&ma, m, 13);
